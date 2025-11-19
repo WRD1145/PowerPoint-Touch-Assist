@@ -1,0 +1,5 @@
+build/
+logs/
+dist/
+build.bat
+.venv/
