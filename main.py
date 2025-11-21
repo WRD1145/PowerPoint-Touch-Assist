@@ -16,7 +16,7 @@ import shortcut as s
 from loguru import logger
 from pathlib import Path
 import uuid
-
+import requests
 # ---------------- 实例ID + 固定模板 ----------------
 INSTANCE_ID = uuid.uuid4().hex          # 32位
 
@@ -98,8 +98,8 @@ if sys.platform == 'win32':
     kernel32 = ctypes.windll.kernel32
     _mutex = kernel32.CreateMutexW(None, False, MUTEX_NAME)
     if kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
-        print("A.R.O.N.A-DEBUG:已经有一个实例了，正在退出此实例")
-        logger.info("A.R.O.N.A: 已经有一个实例了，正在退出此实例")
+        print("已经有一个实例了，正在退出此实例")
+        logger.info("已经有一个实例了，正在退出此实例")
         sys.exit(0)
 
 
@@ -223,7 +223,6 @@ def main():
     window.show()
     logger.info("软件启动")
     sys.exit(app.exec())
-
 
 if __name__ == '__main__':
     configure_logging()

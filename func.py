@@ -62,12 +62,12 @@ def on_click(x, y, button, pressed):
     右键按下：视作触发菜单按钮，避免误触发翻页。
     """
     global is_pressed, pos_mouse, pressed_menuButton, count
-    print(f"X坐标：{x}，Y坐标{y}，按键：{button}，按下：{pressed}\n")
+    #print(f"X坐标：{x}，Y坐标{y}，按键：{button}，按下：{pressed}\n")
     if button == mouse.Button.right:
         # 右键视作菜单操作，阻止翻页触发
         pressed_menuButton = True
         print("右键")
-        logger.info("A.R.O.N.A: 右键点击")
+        logger.info("右键点击")
 
     if button == mouse.Button.left:
         if pressed:
@@ -82,8 +82,8 @@ def on_click(x, y, button, pressed):
             # 释放：若为有效点击且为 PPT 放映，则发送空格翻页
             if is_pressed and not pressed_menuButton and is_finger_not_slide(x, y) and is_powerpoint_showing():
                 pyautogui.press('space')
-                print("A.R.O.N.A-DEBUG: 翻页")
-                logger.info("A.R.O.N.A: 被点击并翻页")
+                print(": 翻页")
+                logger.info("被点击并翻页")
             elif count != 0:
                 count -= 1
             if count == 0:
