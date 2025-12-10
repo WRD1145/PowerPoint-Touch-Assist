@@ -16,6 +16,7 @@ import shortcut as s
 from loguru import logger
 from pathlib import Path
 import uuid
+import hashlib
 
 # ---------------- 实例ID + 固定模板 ----------------
 INSTANCE_ID = uuid.uuid4().hex          # 32位
