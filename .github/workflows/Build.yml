@@ -1,0 +1,48 @@
+name: Build EXE when main updated
+
+on:
+  push:
+    branches: [ main ]          # 监听 main 分支 push
+  workflow_dispatch:            # 也可以手动触发
+
+jobs:
+  build:
+    runs-on: windows-latest     # 要生成 Windows exe 就用 Windows  runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      # 1. 创建并缓存虚拟环境
+      - name: Create & cache venv
+        run: |
+          python -m venv venv
+          venv\Scripts\activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 2. 安装 PyInstaller（如果 requirements.txt 里没写）
+      # - name: Install PyInstaller
+      #   run: venv\Scripts\pip install pyinstaller
+
+      # 3. 执行打包
+      - name: Build with PyInstaller
+        run: |
+          venv\Scripts\activate
+          pyinstaller -w -i icon.ico ^
+            --add-data "main.ui;."      ^
+            --add-data "settings.ui;."  ^
+            --add-data "img;img"        ^
+            --add-data "icon.png;."     ^
+            main.py
+
+      # 4. 上传产物
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-exe
+          path: dist/main/            # PyInstaller 默认生成 dist/工程名/
