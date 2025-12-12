@@ -33,16 +33,16 @@ jobs:
       - name: Build with PyInstaller
         run: |
           venv\Scripts\activate
-          pyinstaller -w -i icon.ico `
-            "--add-data=main.ui;." `
-            "--add-data=settings.ui;." `
-            "--add-data=img;img" `
-            "--add-data=icon.png;." `
+          pyinstaller -w -i icon.ico -n PowerPoint-Touch-Assist `
+            --add-data "main.ui;." `
+            --add-data "settings.ui;." `
+            --add-data "img;img" `
+            --add-data "icon.png;." `
             main.py
 
       # 4. 上传产物
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: main-exe
-          path: dist/main/            # PyInstaller 默认生成 dist/工程名/
+          name: PowerPoint-Touch-Assist       # 下载时看到的 artifact 名称
+          path: dist/PowerPoint-Touch-Assist/ # 实际打包输出目录
