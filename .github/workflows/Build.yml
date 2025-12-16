@@ -2,7 +2,7 @@ name: Build EXE when main updated
 
 on:
   push:
-    branches: [ main ]          # 监听 main 分支 push
+    branches: [ wrd1145-dev ]          # 监听 main 分支 push
   workflow_dispatch:            # 也可以手动触发
 
 jobs:
