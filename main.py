@@ -65,7 +65,7 @@ path_manager = PathManager()
 def configure_logging():
     log_dir = path_manager.get_log_dir()
     logger.add(
-        log_dir / f"PowerPointTouchAssist_{{time:YYYY-MM-DD-HH-mm-ss}}_{INSTANCE_ID}.log",
+        log_dir / f"PowerPointTouchAssist_{{time:YYYY-MM-DD-HH-mm-ss}}.log",
         rotation="5 MB",
         retention="30 days",
         compression="tar.gz",
