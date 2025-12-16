@@ -78,7 +78,6 @@ def configure_logging():
 def log_software_info():
     logger.info(CONFIG_TEMPLATE + "\n日志系统启动成功")
     logger.info("软件启动成功")
-    logger.info("作者: WRD1145")
 
 
 # --------------------------------------------------
