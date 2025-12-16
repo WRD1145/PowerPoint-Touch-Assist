@@ -174,7 +174,7 @@
     <string notr="true">color:white;</string>
    </property>
    <property name="text">
-    <string>当前版本：1.0.0</string>
+    <string>当前版本：</string>
    </property>
   </widget>
   <widget class="QLabel" name="lb_remote">
@@ -225,11 +225,11 @@ QProgressBar::chunk{border-radius:4px;background:#ff5050;}</string>
      <height>181</height>
     </rect>
    </property>
-   <property name="readOnly">
-    <bool>true</bool>
-   </property>
    <property name="styleSheet">
     <string notr="true">background:#2a2a2a;color:white;border-radius:6px;padding:6px;</string>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="btn_update">
@@ -287,10 +287,10 @@ QPushButton:disabled{background:#555;color:#999;}</string>
   <widget class="QLabel" name="Introduction_2">
    <property name="geometry">
     <rect>
-     <x>640</x>
-     <y>400</y>
-     <width>111</width>
-     <height>16</height>
+     <x>90</x>
+     <y>396</y>
+     <width>661</width>
+     <height>20</height>
     </rect>
    </property>
    <property name="font">
@@ -304,7 +304,7 @@ QPushButton:disabled{background:#555;color:#999;}</string>
     <string notr="true">color: rgb(127, 127, 127);</string>
    </property>
    <property name="text">
-    <string>愿此行，终抵群星</string>
+    <string>就算结局早已注定，但在此之前，在走向结局的路上，人能做的事同样很多，而结局也会因此展现截然不同的意义。</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
