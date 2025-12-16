@@ -42,7 +42,9 @@ print("""
 
 conf = ConfigParser()
 conf.read('config.ini', encoding='utf-8')
+conf.set("About","version","1.3.0")
 version = conf['About']['version']
+
 
 # --------------------------------------------------
 # ③ PathManager & 日志
