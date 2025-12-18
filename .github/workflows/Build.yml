@@ -1,27 +1,45 @@
-name: Build exe
+name: Build after PR merged
 
 on:
-  push:               
-  workflow_dispatch:  
+  pull_request:
+    types: [ closed ]   # PR 关闭时触发（含合并/未合并）
+  workflow_dispatch:
 
 jobs:
   build:
+    # 仅当 PR 被真正合并才跑
+    if: github.event.pull_request.merged == true
     runs-on: windows-latest
     steps:
-      - name: 检出分支
+      - name: 检出合并后的代码
         uses: actions/checkout@v4
+        with:
+          # 显式指定合并提交的 SHA，确保拿到合并后快照
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: 安装 Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: 装依赖并打包
+      - name: 缓存依赖
+        uses: actions/cache@v4
+        id: cache-venv
+        with:
+          path: venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}
+
+      - name: 创建/恢复虚拟环境并安装依赖
+        if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
           python -m venv venv
           venv\Scripts\activate
           python -m pip install -U pip
           pip install -r requirements.txt
+
+      - name: 打包
+        run: |
+          venv\Scripts\activate
           pyinstaller -w -i icon.ico -n PowerPoint-Touch-Assist `
             --add-data "main.ui;." `
             --add-data "settings.ui;." `
@@ -32,5 +50,5 @@ jobs:
       - name: 上传成品
         uses: actions/upload-artifact@v4
         with:
-          name: PowerPoint-Touch-Assist-${{ github.ref_name }}
+          name: PowerPoint-Touch-Assist
           path: dist/PowerPoint-Touch-Assist/
