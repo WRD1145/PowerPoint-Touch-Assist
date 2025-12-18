@@ -8,8 +8,6 @@ on:
 
 jobs:
   build:
-    # 只在“合并成功”时跑
-    if: github.event.pull_request.merged == true && github.head_ref == 'wrd1145-dev'
     runs-on: windows-latest
     steps:
       - name: Checkout
