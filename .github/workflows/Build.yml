@@ -1,43 +1,36 @@
-name: Build EXE when wrd1145-dev merged into dev
+name: Build exe
 
 on:
-  pull_request:
-    types: [ closed ]
-    branches: [ dev ]          # 目标分支是 dev
-  workflow_dispatch:
+  push:               
+  workflow_dispatch:  
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Checkout
+      - name: 检出分支
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: 安装 Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Create & cache venv
+      - name: 装依赖并打包
         run: |
           python -m venv venv
           venv\Scripts\activate
-          python -m pip install --upgrade pip
+          python -m pip install -U pip
           pip install -r requirements.txt
-
-      - name: Build with PyInstaller
-        run: |
-          venv\Scripts\activate
           pyinstaller -w -i icon.ico -n PowerPoint-Touch-Assist `
             --add-data "main.ui;." `
             --add-data "settings.ui;." `
-            --add-data "config.ini;." `
             --add-data "img;img" `
             --add-data "icon.png;." `
             main.py
 
-      - name: Upload artifact
+      - name: 上传成品
         uses: actions/upload-artifact@v4
         with:
-          name: PowerPoint-Touch-Assist
+          name: PowerPoint-Touch-Assist-${{ github.ref_name }}
           path: dist/PowerPoint-Touch-Assist/
