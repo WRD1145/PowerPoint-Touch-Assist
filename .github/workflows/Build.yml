@@ -31,7 +31,6 @@ jobs:
           pyinstaller -w -i icon.ico -n PowerPoint-Touch-Assist `
             --add-data "main.ui;." `
             --add-data "settings.ui;." `
-            --add-data "config.ini;." `
             --add-data "img;img" `
             --add-data "icon.png;." `
             main.py
