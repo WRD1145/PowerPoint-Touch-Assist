@@ -43,8 +43,10 @@ try:
     conf = ConfigParser()
     conf.read('config.ini', encoding='utf-8')
     version = conf['About']['version']
-except KeyError:
-    logger.bug("config.ini不存在，正在重新创建")
+except KeyError as e:
+    logger.bug(f"读取 config.ini 出错（缺少 {e}）,重新创建")
+    conf = ConfigParser()
+
     conf['General'] = {
         'dpi': '0',
         'ppt_title': 'PowerPoint 幻灯片放映',
@@ -52,9 +54,9 @@ except KeyError:
     }
 
     conf['Miscellaneous'] = {
-    'initialstartup': '0',
-    'ver': '1.1'
-}
+        'initialstartup': '0',
+        'ver': '1.1'
+    }
 
     conf['About'] = {
         'version': '1.2.0'
@@ -62,7 +64,6 @@ except KeyError:
 
     with open('config.ini', 'w', encoding='utf-8') as f:
         conf.write(f)
-
 
 
 # --------------------------------------------------
