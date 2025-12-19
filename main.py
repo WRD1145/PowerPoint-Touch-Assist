@@ -39,29 +39,7 @@ print("""
 钟表的指针周而复始，就像人的困惑、烦恼、软弱…摇摆不停。但最终，人们依旧要前进，就像你的指针，永远落在前方。
 
 """)
-try:
-    conf = ConfigParser()
-    conf.read('config.ini', encoding='utf-8')
-    version = conf['About']['version']
-except KeyError:
-    logger.bug("config.ini不存在，正在重新创建")
-    conf['General'] = {
-        'dpi': '0',
-        'ppt_title': 'PowerPoint 幻灯片放映',
-        'auto_startup': '0'
-    }
 
-    conf['Miscellaneous'] = {
-    'initialstartup': '0',
-    'ver': '1.1'
-}
-
-    conf['About'] = {
-        'version': '1.2.0'
-    }
-
-    with open('config.ini', 'w', encoding='utf-8') as f:
-        conf.write(f)
 
 
 
@@ -100,6 +78,32 @@ def log_software_info():
     logger.info(CONFIG_TEMPLATE + "\n日志系统启动成功")
     logger.info("软件启动成功")
 
+# --------------------------------------------------
+# config.ini读取
+# --------------------------------------------------
+try:
+    conf = ConfigParser()
+    conf.read('config.ini', encoding='utf-8')
+    version = conf['About']['version']
+except KeyError:
+    logger.error("config.ini不存在，正在重新创建")
+    conf['General'] = {
+        'dpi': '0',
+        'ppt_title': 'PowerPoint 幻灯片放映',
+        'auto_startup': '0'
+    }
+
+    conf['Miscellaneous'] = {
+        'initialstartup': '0',
+        'ver': '1.1'
+    }
+
+    conf['About'] = {
+        'version': '1.3.0'
+    }
+
+    with open('config.ini', 'w', encoding='utf-8') as f:
+        conf.write(f)
 
 # --------------------------------------------------
 # ④ 单实例检测
