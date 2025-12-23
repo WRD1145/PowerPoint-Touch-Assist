@@ -1,42 +1,53 @@
-name: Build EXE when wrd1145-dev merged into dev
+name: Build after PR merged
 
 on:
   pull_request:
-    types: [ closed ]
-    branches: [ dev ]          # 目标分支是 dev
+    types: [ closed ]   # PR 关闭时触发（含合并/未合并）
   workflow_dispatch:
 
 jobs:
   build:
+    # 仅当 PR 被真正合并才跑
+    if: github.event.pull_request.merged == true
     runs-on: windows-latest
     steps:
-      - name: Checkout
+      - name: 检出合并后的代码
         uses: actions/checkout@v4
+        with:
+          # 显式指定合并提交的 SHA，确保拿到合并后快照
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      - name: Set up Python
+      - name: 安装 Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Create & cache venv
+      - name: 缓存依赖
+        uses: actions/cache@v4
+        id: cache-venv
+        with:
+          path: venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}
+
+      - name: 创建/恢复虚拟环境并安装依赖
+        if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
           python -m venv venv
           venv\Scripts\activate
-          python -m pip install --upgrade pip
+          python -m pip install -U pip
           pip install -r requirements.txt
 
-      - name: Build with PyInstaller
+      - name: 打包
         run: |
           venv\Scripts\activate
           pyinstaller -w -i icon.ico -n PowerPoint-Touch-Assist `
             --add-data "main.ui;." `
             --add-data "settings.ui;." `
-            --add-data "config.ini;." `
             --add-data "img;img" `
             --add-data "icon.png;." `
             main.py
 
-      - name: Upload artifact
+      - name: 上传成品
         uses: actions/upload-artifact@v4
         with:
           name: PowerPoint-Touch-Assist
