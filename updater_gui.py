@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-updater_gui.py
-功能：下载 zip → 解压 → 除 logs & config.ini 外全部覆盖 → 重启
-      若主程序被占用（Windows）→ 生成延迟 bat 脚本完成覆盖与重启
-"""
 import json
 import os
 import sys
