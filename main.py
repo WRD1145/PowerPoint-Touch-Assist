@@ -16,6 +16,7 @@ import conf_file
 import conf_ui
 from configparser import ConfigParser
 
+from _version import __version__  as versi
 # --------------------------------------------------
 # ① 更新窗口模块（同级目录）
 # --------------------------------------------------
@@ -39,33 +40,8 @@ print("""
 「钟表的指针周而复始，就像人的困惑、烦恼、软弱…摇摆不停。但最终，人们依旧要前进，就像你的指针，永远落在前方。」
 
 """)
-try:
-    conf = ConfigParser()
-    conf.read('config.ini', encoding='utf-8')
-    version = conf['About']['version']
-except KeyError as e:
-    logger.bug(f"读取 config.ini 出错（缺少 {e}）,重新创建")
-    conf = ConfigParser()
 
-    conf['General'] = {
-        'dpi': '0',
-        'ppt_title': 'PowerPoint 幻灯片放映',
-        'auto_startup': '0'
-    }
-
-    conf['Miscellaneous'] = {
-        'initialstartup': '0',
-        'ver': '1.1'
-    }
-
-    conf['About'] = {
-        'version': '1.2.0'
-    }
-
-    with open('config.ini', 'w', encoding='utf-8') as f:
-        conf.write(f)
-
-
+version = versi
 # --------------------------------------------------
 # ③ PathManager & 日志
 # --------------------------------------------------
