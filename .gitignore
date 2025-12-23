@@ -1,5 +1,6 @@
 build/
 logs/
 dist/
-build.bat
 .venv/
+__pycache__/
+.idea/
