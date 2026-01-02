@@ -15,6 +15,7 @@ from loguru import logger
 import conf_file
 import conf_ui
 from configparser import ConfigParser
+import func
 
 from _version import __version__  as versi
 # --------------------------------------------------
@@ -195,8 +196,7 @@ class TrayIcon(QSystemTrayIcon):
 # ⑦ 业务线程（示例）
 # --------------------------------------------------
 def run_func():
-    # 这里放你的核心业务，例如监听 PowerPoint 触屏
-    logger.info("业务线程启动")
+    func.main()
 
 
 # --------------------------------------------------
@@ -233,3 +233,4 @@ if __name__ == '__main__':
     configure_logging()
     log_software_info()
     main()
+    
