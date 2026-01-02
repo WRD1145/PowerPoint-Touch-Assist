@@ -67,6 +67,7 @@ def on_click(x, y, button, pressed):
         # 右键视作菜单操作，阻止翻页触发
         pressed_menuButton = True
         logger.debug("右键点击")
+        print("右键点击")
 
     if button == mouse.Button.left:
         if pressed:
@@ -82,6 +83,7 @@ def on_click(x, y, button, pressed):
             if is_pressed and not pressed_menuButton and is_finger_not_slide(x, y) and is_powerpoint_showing():
                 pyautogui.press('space')
                 logger.debug("被点击并翻页")
+                print("被点击并翻页")
             elif count != 0:
                 count -= 1
             if count == 0:

@@ -30,7 +30,7 @@ CONFIG_TEMPLATE = f"""
 实例 ID        : {INSTANCE_ID}
 """.strip()
 
-print("""
+print("""\033[0;31m
     ____                          ____        _       __      ______                 __          ___              _      __ 
    / __ \____ _      _____  _____/ __ \____  (_)___  / /_    /_  __/___  __  _______/ /_        /   |  __________(_)____/ /_
   / /_/ / __ \ | /| / / _ \/ ___/ /_/ / __ \/ / __ \/ __/_____/ / / __ \/ / / / ___/ __ \______/ /| | / ___/ ___/ / ___/ __/
@@ -38,7 +38,7 @@ print("""
 /_/    \____/|__/|__/\___/_/  /_/    \____/_/_/ /_/\__/     /_/  \____/\__,_/\___/_/ /_/     /_/  |_/____/____/_/____/\__/  
 
 「钟表的指针周而复始，就像人的困惑、烦恼、软弱…摇摆不停。但最终，人们依旧要前进，就像你的指针，永远落在前方。」
-
+\033[0m
 """)
 
 version = versi
@@ -69,7 +69,8 @@ def configure_logging():
         compression="tar.gz",
         backtrace=True,
         diagnose=True,
-        catch=True
+        catch=True,
+        level="DEBUG"
     )
 
 
@@ -216,11 +217,6 @@ def main():
     # 首次启动快捷方式 & 设置
     if int(conf_file.read_conf('Miscellaneous', 'InitialStartUp') or 0) == 1:
         conf_file.write_conf('Miscellaneous', 'InitialStartUp', '0')
-        # 若 shortcut 模块不存在，下面三行可注释
-        # s.add_to_desktop('PowerPoint_TouchAssist.exe')
-        # s.add_to_startmenu('PowerPoint_TouchAssist.exe')
-        # s.add_to_startmenu('PowerPoint_TouchAssist.exe', name='PowerPoint 触屏辅助 - 设置', args='settings')
-        # conf_ui.main()
     else:
         t = threading.Thread(target=run_func, daemon=True)
         t.start()

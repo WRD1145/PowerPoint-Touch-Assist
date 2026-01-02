@@ -29,7 +29,7 @@ def add_to_startup(file_path="", icon_path=""):
     shortcut.save()
 
 
-def remove_from_startup():
+def remove_from_startup(program_name):
     """移除开机自启快捷方式"""
     startup_folder = os.path.join(os.getenv('APPDATA'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
     shortcut_path = os.path.join(startup_folder, f'{program_name}.lnk')
