@@ -183,6 +183,7 @@ class UpdaterWindow(QWidget):
         except Exception as e:
             logger.error(f"获取版本信息失败：{e}")
             self.log.append(f"<font color=red>检查失败：{e}</font>")
+            self.lb_remote.setText("远程版本号：获取失败，请查看日志")
             return
 
         self.lb_remote.setText(f"远程版本：{self.latest_ver}")
