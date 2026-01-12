@@ -74,6 +74,15 @@ def configure_logging():
         level="DEBUG"
     )
 
+# 未捕获异常处理
+
+def capture_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logger.error("未处理的异常", exc_info=(exc_type, exc_value, exc_traceback))
+
+sys.excepthook = capture_exception
 
 def log_software_info():
     logger.info(CONFIG_TEMPLATE + "\n日志系统启动成功")
@@ -205,7 +214,6 @@ def run_func():
 def main():
     args = sys.argv[1:]
     if 'settings' in args:
-        # conf_ui.main()   # 若不存在可注释
         return
 
     app = QApplication(sys.argv)
