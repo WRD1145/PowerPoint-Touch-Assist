@@ -18,6 +18,8 @@ from configparser import ConfigParser
 import func
 
 from _version import __version__  as versi
+
+
 # --------------------------------------------------
 # ① 更新窗口模块（同级目录）
 # --------------------------------------------------
