@@ -28,15 +28,60 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>软件更新</string>
+   <string>0</string>
   </property>
   <property name="windowIcon">
    <iconset>
     <normaloff>img/favicon.ico</normaloff>img/favicon.ico</iconset>
   </property>
   <property name="styleSheet">
-   <string notr="true">background:rgba(32,32,32,0.95);border-radius:8px;</string>
+   <string notr="true">background:white;border-radius:8px;</string>
   </property>
+  <widget class="QLabel" name="Title">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>121</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Microsoft YaHei</family>
+     <pointsize>22</pointsize>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color:black;</string>
+   </property>
+   <property name="text">
+    <string>软件更新</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lb_remote">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>230</y>
+     <width>191</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Microsoft YaHei</family>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color:black;</string>
+   </property>
+   <property name="text">
+    <string>远程版本：检查中…</string>
+   </property>
+  </widget>
   <widget class="QProgressBar" name="bar">
    <property name="geometry">
     <rect>
@@ -52,6 +97,25 @@
    <property name="styleSheet">
     <string notr="true">QProgressBar{border-radius:4px;background:#555;}
 QProgressBar::chunk{border-radius:4px;background:#ff5050;}</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>50</y>
+     <width>101</width>
+     <height>101</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="pixmap">
+    <pixmap>img/Update.png</pixmap>
+   </property>
+   <property name="scaledContents">
+    <bool>true</bool>
    </property>
   </widget>
  </widget>

@@ -19,6 +19,9 @@ import func
 
 from _version import __version__  as versi
 
+# 遥测
+import sentry_sdk
+sentry_sdk.init("https://8d9d348bd940475290169863e104f592@sentry.wrd1145.dev/1")
 
 # --------------------------------------------------
 # ① 更新窗口模块（同级目录）
