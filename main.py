@@ -23,8 +23,10 @@ import func
 
 from _version import __version__  as versi
 import telemetry
-telemetry.init_telemetry()  # 无配置时静默跳过，有配置时自动启用
+from telemetry import report, breadcrumb  # 显式导入便捷函数
 
+# 或者使用 telemetry.report()
+telemetry.init_telemetry()
 def debug_telemetry():
     # 1. 上报异常（带上下文）
     try:
