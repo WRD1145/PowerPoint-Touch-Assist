@@ -6,7 +6,7 @@ import json
 import atexit
 from typing import Optional, Dict, Any
 from loguru import logger
-
+from BrowserTracing  import sentry_sdk;
 try:
     from _version import __version__ as VERSION
 except ImportError:
@@ -48,6 +48,7 @@ def init_telemetry():
             release=config.get("release", VERSION),
             traces_sample_rate=config.get("traces_sample_rate", 0.1 if _environment == "production" else 0.0),
             shutdown_timeout=5,
+            tracesSampleRate=1.0,
         )
         
         atexit.register(lambda: sentry_sdk.flush(timeout=3))
@@ -56,12 +57,12 @@ def init_telemetry():
         logger.info(f"[Telemetry] 已初始化 [{_environment}@{config.get('release', VERSION)}]")
         
         # 验证连接
-        try:
-            event_id = sentry_sdk.capture_message(f"Start {VERSION}", level="info")
-            sentry_sdk.flush(timeout=2)
-            logger.debug(f"[Telemetry] 验证事件已发送 [{event_id}]")
-        except Exception:
-            pass  # 验证失败不影响主程序
+        # try:
+            # event_id = sentry_sdk.capture_message(f"Start {VERSION}", level="info")
+            # sentry_sdk.flush(timeout=2)
+             # logger.debug(f"[Telemetry] 验证事件已发送 [{event_id}]")
+        # except Exception:
+            # pass  # 验证失败不影响主程序
             
         return True
         
