@@ -23,47 +23,8 @@ import func
 
 from _version import __version__  as versi
 import telemetry
-from telemetry import report, breadcrumb  # 显式导入便捷函数
-
 # 或者使用 telemetry.report()
 telemetry.init_telemetry()
-def debug_telemetry():
-    # 1. 上报异常（带上下文）
-    try:
-        1 / 0
-    except Exception as e:
-        report(
-            error=e,
-            level="error",
-            tags={"module": "test", "action": "divide"},
-            extra={"input_a": 1, "input_b": 0}
-        )
-    
-    # 2. 上报消息
-    report(
-        message="应用启动完成",
-        level="info",
-        tags={"event": "startup"},
-        user={"id": "system", "username": "app"}
-    )
-    
-    # 3. 面包屑 + 异常
-    breadcrumb("开始处理文件", category="file", data={"path": "/tmp/test.pptx"})
-    breadcrumb("验证格式", category="file", data={"format": "pptx"})
-    try:
-        raise ValueError("文件损坏")
-    except Exception as e:
-        report(
-            error=e,
-            tags={"stage": "validation"},
-            fingerprint=["file_error", "corrupted"]  # 强制同组
-        )
-    
-    # 4. 性能追踪
-    with span("process", "convert pptx"):
-        import time
-        time.sleep(0.1)
-        breadcrumb("转换完成", category="convert")
 # --------------------------------------------------
 # ① 更新窗口模块（同级目录）
 # --------------------------------------------------
@@ -121,7 +82,7 @@ def configure_logging():
     )
 
 # 未捕获异常处理
-
+"""
 def capture_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
@@ -129,7 +90,7 @@ def capture_exception(exc_type, exc_value, exc_traceback):
     logger.error("未处理的异常", exc_info=(exc_type, exc_value, exc_traceback))
 
 sys.excepthook = capture_exception
-
+"""
 def log_software_info():
     logger.info(CONFIG_TEMPLATE + "\n日志系统启动成功")
     logger.info("软件启动成功")
@@ -258,7 +219,6 @@ def run_func():
 # ⑧ 主入口
 # --------------------------------------------------
 def main():
-    debug_telemetry()
     args = sys.argv[1:]
     if 'settings' in args:
         return
