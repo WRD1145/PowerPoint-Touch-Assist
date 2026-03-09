@@ -1,4 +1,8 @@
 # ======================  main.py  ======================
+# 遥测
+import telemetry
+# 初始化（自动判断环境）
+telemetry.init_telemetry()
 import os
 import sys
 import json
@@ -18,11 +22,46 @@ from configparser import ConfigParser
 import func
 
 from _version import __version__  as versi
+import telemetry
+telemetry.init_telemetry()  # 无配置时静默跳过，有配置时自动启用
 
-# 遥测
-import sentry_sdk
-sentry_sdk.init("https://8d9d348bd940475290169863e104f592@sentry.wrd1145.dev/1")
-
+def debug_telemetry():
+    # 1. 上报异常（带上下文）
+    try:
+        1 / 0
+    except Exception as e:
+        report(
+            error=e,
+            level="error",
+            tags={"module": "test", "action": "divide"},
+            extra={"input_a": 1, "input_b": 0}
+        )
+    
+    # 2. 上报消息
+    report(
+        message="应用启动完成",
+        level="info",
+        tags={"event": "startup"},
+        user={"id": "system", "username": "app"}
+    )
+    
+    # 3. 面包屑 + 异常
+    breadcrumb("开始处理文件", category="file", data={"path": "/tmp/test.pptx"})
+    breadcrumb("验证格式", category="file", data={"format": "pptx"})
+    try:
+        raise ValueError("文件损坏")
+    except Exception as e:
+        report(
+            error=e,
+            tags={"stage": "validation"},
+            fingerprint=["file_error", "corrupted"]  # 强制同组
+        )
+    
+    # 4. 性能追踪
+    with span("process", "convert pptx"):
+        import time
+        time.sleep(0.1)
+        breadcrumb("转换完成", category="convert")
 # --------------------------------------------------
 # ① 更新窗口模块（同级目录）
 # --------------------------------------------------
@@ -217,6 +256,7 @@ def run_func():
 # ⑧ 主入口
 # --------------------------------------------------
 def main():
+    debug_telemetry()
     args = sys.argv[1:]
     if 'settings' in args:
         return

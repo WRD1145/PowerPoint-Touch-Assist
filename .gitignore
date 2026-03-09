@@ -5,3 +5,11 @@ dist/
 __pycache__/
 .idea/
 AGENTS.md
+# 敏感配置（绝对不能提交到仓库）
+resources/telemetry.json
+.env
+
+# 构建产物
+build/
+dist/
+*.spec

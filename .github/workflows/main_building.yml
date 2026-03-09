@@ -12,28 +12,27 @@ jobs:
     
     steps:
       - name: Checkout merged code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      - name: Extract version and body
+      - name: Extract version info
         id: extract
         shell: pwsh
         run: |
           $title = "${{ github.event.pull_request.title }}"
           $body = "${{ github.event.pull_request.body }}"
           "version=$title" >> $env:GITHUB_OUTPUT
-          "body<<EOF" >> $env:GITHUB_OUTPUT
-          $body >> $env:GITHUB_OUTPUT
-          "EOF" >> $env:GITHUB_OUTPUT
+          # 处理多行 body
+          "body=$body" >> $env:GITHUB_OUTPUT
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         id: cache-venv
         with:
           path: venv
@@ -41,55 +40,71 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache-venv.outputs.cache-hit != 'true'
+        shell: pwsh
         run: |
           python -m venv venv
           venv\Scripts\activate
           python -m pip install -U pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt pyinstaller
 
-      - name: Inject hardcoded telemetry
+      # ========== 注入 Sentry 配置 ==========
+      - name: Inject telemetry config
+        shell: pwsh
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
-          $dsn = "$env:SENTRY_DSN"
-          $version = "${{ steps.extract.outputs.version }}"
-          $content = @"
-          # 遥测
-          import sentry_sdk
-          sentry_sdk.init(
-              dsn="$dsn",
-              environment="production",
-              release="$version",
-              traces_sample_rate=1.0
-          )
-          "@
-          # 读取 main.py
-          $main = Get-Content main.py -Raw
-          # 替换遥测部分
-          $pattern = '# 遥测[\s\S]*?else:\s*print\("SENTRY_DSN not set, skipping Sentry initialization"\)'
-          $main = $main -replace $pattern, $content.Trim()
-          # 写回
-          Set-Content main.py $main -NoNewline
-          Write-Host "Telemetry injected successfully"
+          New-Item -ItemType Directory -Force -Path "resources" | Out-Null
+          
+          $config = @{
+            dsn = $env:SENTRY_DSN
+            environment = "production"
+            release = "${{ steps.extract.outputs.version }}"
+            traces_sample_rate = 0.1
+          } | ConvertTo-Json
+          
+          $config | Set-Content -Path "resources/telemetry.json" -Encoding UTF8
+          Write-Host "✓ telemetry.json created"
 
       - name: Build with PyInstaller
+        shell: pwsh
         run: |
           venv\Scripts\activate
-          pyinstaller -w -i icon.ico -n PowerPoint-Touch-Assist `
+          pyinstaller -w -i icon.ico -n "PowerPoint-Touch-Assist" `
             --add-data "main.ui;." `
             --add-data "settings.ui;." `
             --add-data "img;img" `
             --add-data "icon.png;." `
+            --add-data "resources;resources" `
+            --clean `
             main.py
 
-      - name: Zip artifact
+      - name: Package artifact
+        shell: pwsh
         run: |
-          Compress-Archive -Path dist/PowerPoint-Touch-Assist/* -DestinationPath dist/PowerPoint-Touch-Assist.zip
+          $version = "${{ steps.extract.outputs.version }}"
+          Compress-Archive -Path "dist/PowerPoint-Touch-Assist/*" -DestinationPath "dist/PowerPoint-Touch-Assist-$version.zip" -Force
 
+      # 使用官方的 gh CLI 创建 Release（无需第三方 action）
       - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.extract.outputs.version }}
-          name: ${{ steps.extract.outputs.version }}
-          body: ${{ steps.extract.outputs.body }}
-          files: dist/PowerPoint-Touch-Assist.zip
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = "${{ steps.extract.outputs.version }}"
+          $body = "${{ steps.extract.outputs.body }}"
+          $zipPath = "dist/PowerPoint-Touch-Assist-$version.zip"
+          
+          # 使用 gh CLI 创建 release 并上传文件
+          gh release create $version $zipPath `
+            --title $version `
+            --notes "$body" `
+            --target ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Cleanup sensitive files
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path "resources/telemetry.json") {
+            Remove-Item "resources/telemetry.json" -Force
+            Write-Host "✓ Cleaned up"
+          }
