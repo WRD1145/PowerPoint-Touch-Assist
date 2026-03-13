@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       
-      - uses: actions/setup-python@v6  # 使用 v6（如果存在）
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -44,18 +44,18 @@ jobs:
         run: |
           "__version__ = `"${{ steps.ver.outputs.version }}`"" | Set-Content "_version.py"
 
-      - name: Install deps
-        shell: pwsh
-        run: |
-          python -m venv venv
-          venv\Scripts\activate
-          pip install -r requirements.txt pyinstaller
-
-      - name: Inject Sentry & Build
+      # 合并安装和构建，避免 venv 跨 step 失效
+      - name: Install deps, Inject Sentry & Build
         shell: pwsh
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
+          # 安装依赖（只在当前 step）
+          python -m venv venv
+          venv\Scripts\activate
+          pip install -r requirements.txt pyinstaller
+          
+          # 注入 Sentry 配置
           New-Item -ItemType Directory -Force -Path "resources" | Out-Null
           @{
             dsn = $env:SENTRY_DSN
@@ -64,6 +64,7 @@ jobs:
             traces_sample_rate = 0.1
           } | ConvertTo-Json | Set-Content "resources/telemetry.json"
           
+          # 构建（同一 shell，venv 已激活）
           pyinstaller -w -i icon.ico -n "PowerPoint-Touch-Assist" `
             --add-data "main.ui;." `
             --add-data "settings.ui;." `
@@ -72,18 +73,22 @@ jobs:
             --add-data "resources;resources" `
             main.py
           
+          # 打包
           $v = "${{ steps.ver.outputs.version }}"
           Compress-Archive -Path "dist/PowerPoint-Touch-Assist/*" -DestinationPath "dist/PowerPoint-Touch-Assist-v$v.zip"
 
       - name: Create Release
+        shell: pwsh  # 明确指定 pwsh，否则可能用 bash 导致语法错误
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $tag = "${{ steps.ver.outputs.tag }}"
           $pre = "${{ steps.ver.outputs.is_prerelease }}"
-          gh release create $tag dist/PowerPoint-Touch-Assist-v${{ steps.ver.outputs.version }}.zip `
-            --title $tag --generate-notes $(if($pre -eq "True"){"--prerelease"})
+          $args = @("release", "create", $tag, "dist/PowerPoint-Touch-Assist-v${{ steps.ver.outputs.version }}.zip", "--title", $tag, "--generate-notes")
+          if ($pre -eq "True") { $args += "--prerelease" }
+          & gh @args
 
       - name: Cleanup
+        shell: pwsh
         if: always()
         run: Remove-Item "resources/telemetry.json" -Force -ErrorAction SilentlyContinue
