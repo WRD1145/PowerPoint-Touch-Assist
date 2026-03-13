@@ -13,16 +13,13 @@ from PyQt6.QtCore import QThread, pyqtSignal, Qt, QCoreApplication
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QProgressBar, QTextEdit, QApplication)
 from PyQt6.QtGui import QIcon
+import version
 
 # -------------- 日志 --------------
 from loguru import logger
 
-# -------------- 读 config.ini --------------
-from configparser import ConfigParser
-
-conf = ConfigParser()
-conf.read('config.ini', encoding='utf-8')
-CURRENT_VERSION = conf.get('About', 'version', fallback='1.0.0')
+from _version import __version__  as version
+CURRENT_VERSION = version
 DEFAULT_VERSION_URL = "https://wrd1145.dev/version.json"
 # 主程序路径
 MAIN_PATH = Path(sys.executable) if getattr(sys, 'frozen', False) else Path(__file__).resolve()
