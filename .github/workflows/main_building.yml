@@ -20,50 +20,50 @@ jobs:
         id: extract
         shell: pwsh
         run: |
-          $title = "${{ github.event.pull_request.title }}"
+          $rawTitle = "${{ github.event.pull_request.title }}"
           $body = "${{ github.event.pull_request.body }}"
-          "version=$title" >> $env:GITHUB_OUTPUT
-          # 处理多行 body
+          
+          # 提取版本（支持 v1.4.0, v1.4.0-beta, v1.4.0-beta.2 等）
+          $version = $rawTitle -replace '^v', ''
+          
+          # 检测是否为预发布版本（含 -alpha, -beta, -rc, -pre 等）
+          $isPrerelease = $version -match '-(alpha|beta|rc|pre|dev|snapshot)'
+          
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "is_prerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
           "body=$body" >> $env:GITHUB_OUTPUT
+          
+          Write-Host "Version: $version"
+          Write-Host "Is Prerelease: $isPrerelease"
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        id: cache-venv
-        with:
-          path: venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}
+      - name: Update version in _version.py
+        shell: pwsh
+        run: |
+          $version = "${{ steps.extract.outputs.version }}"
+          "__version__ = `"$version`"" | Set-Content -Path "_version.py" -Encoding UTF8
+          Write-Host "✓ _version.py: $version"
 
       - name: Install dependencies
-        if: steps.cache-venv.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           python -m venv venv
           venv\Scripts\activate
-          python -m pip install -U pip
           pip install -r requirements.txt pyinstaller
 
-      # ========== 注入 Sentry 配置 ==========
       - name: Inject telemetry config
         shell: pwsh
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           New-Item -ItemType Directory -Force -Path "resources" | Out-Null
-          
           $config = @{
             dsn = $env:SENTRY_DSN
             environment = "production"
             release = "${{ steps.extract.outputs.version }}"
             traces_sample_rate = 0.1
           } | ConvertTo-Json
-          
           $config | Set-Content -Path "resources/telemetry.json" -Encoding UTF8
-          Write-Host "✓ telemetry.json created"
+          Write-Host "✓ telemetry.json: ${{ steps.extract.outputs.version }}"
 
       - name: Build with PyInstaller
         shell: pwsh
@@ -82,23 +82,32 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.extract.outputs.version }}"
-          Compress-Archive -Path "dist/PowerPoint-Touch-Assist/*" -DestinationPath "dist/PowerPoint-Touch-Assist-$version.zip" -Force
+          Compress-Archive -Path "dist/PowerPoint-Touch-Assist/*" `
+            -DestinationPath "dist/PowerPoint-Touch-Assist-v$version.zip" -Force
 
-      # 使用官方的 gh CLI 创建 Release（无需第三方 action）
       - name: Create Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $version = "${{ steps.extract.outputs.version }}"
-          $body = "${{ steps.extract.outputs.body }}"
-          $zipPath = "dist/PowerPoint-Touch-Assist-$version.zip"
+          $displayVersion = "v$version"
+          $isPrerelease = "${{ steps.extract.outputs.is_prerelease }}"
+          $zipPath = "dist/PowerPoint-Touch-Assist-v$version.zip"
           
-          # 使用 gh CLI 创建 release 并上传文件
-          gh release create $version $zipPath `
-            --title $version `
-            --notes "$body" `
-            --target ${{ github.event.pull_request.merge_commit_sha }}
+          Write-Host "Creating release: $displayVersion"
+          Write-Host "Prerelease: $isPrerelease"
+          
+          # 构建命令
+          $cmd = "gh release create `"$displayVersion`" `"$zipPath`" --title `"$displayVersion`" --notes `"${{ steps.extract.outputs.body }}`""
+          
+          # 如果是预发布，添加标志
+          if ($isPrerelease -eq "True") {
+            $cmd += " --prerelease"
+            Write-Host "Marked as PRE-RELEASE"
+          }
+          
+          Invoke-Expression $cmd
 
       - name: Cleanup sensitive files
         if: always()
@@ -106,5 +115,4 @@ jobs:
         run: |
           if (Test-Path "resources/telemetry.json") {
             Remove-Item "resources/telemetry.json" -Force
-            Write-Host "✓ Cleaned up"
           }
