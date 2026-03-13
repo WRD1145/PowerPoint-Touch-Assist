@@ -1,4 +1,8 @@
 # ======================  main.py  ======================
+# 遥测
+import telemetry
+# 初始化（自动判断环境）
+telemetry.init_telemetry()
 import os
 import sys
 import json
@@ -15,7 +19,12 @@ from loguru import logger
 import conf_file
 import conf_ui
 from configparser import ConfigParser
+import func
 
+from _version import __version__  as versi
+import telemetry
+# 或者使用 telemetry.report()
+telemetry.init_telemetry()
 # --------------------------------------------------
 # ① 更新窗口模块（同级目录）
 # --------------------------------------------------
@@ -29,42 +38,18 @@ CONFIG_TEMPLATE = f"""
 实例 ID        : {INSTANCE_ID}
 """.strip()
 
-print("""
+print("""\033[0;31m
     ____                          ____        _       __      ______                 __          ___              _      __ 
    / __ \____ _      _____  _____/ __ \____  (_)___  / /_    /_  __/___  __  _______/ /_        /   |  __________(_)____/ /_
   / /_/ / __ \ | /| / / _ \/ ___/ /_/ / __ \/ / __ \/ __/_____/ / / __ \/ / / / ___/ __ \______/ /| | / ___/ ___/ / ___/ __/
  / ____/ /_/ / |/ |/ /  __/ /  / ____/ /_/ / / / / / /_/_____/ / / /_/ / /_/ / /__/ / / /_____/ ___ |(__  |__  ) (__  ) /_  
 /_/    \____/|__/|__/\___/_/  /_/    \____/_/_/ /_/\__/     /_/  \____/\__,_/\___/_/ /_/     /_/  |_/____/____/_/____/\__/  
 
-钟表的指针周而复始，就像人的困惑、烦恼、软弱…摇摆不停。但最终，人们依旧要前进，就像你的指针，永远落在前方。
-
+「钟表的指针周而复始，就像人的困惑、烦恼、软弱…摇摆不停。但最终，人们依旧要前进，就像你的指针，永远落在前方。」
+\033[0m
 """)
-try:
-    conf = ConfigParser()
-    conf.read('config.ini', encoding='utf-8')
-    version = conf['About']['version']
-except KeyError:
-    logger.bug("config.ini不存在，正在重新创建")
-    conf['General'] = {
-        'dpi': '0',
-        'ppt_title': 'PowerPoint 幻灯片放映',
-        'auto_startup': '0'
-    }
 
-    conf['Miscellaneous'] = {
-    'initialstartup': '0',
-    'ver': '1.1'
-}
-
-    conf['About'] = {
-        'version': '1.2.0'
-    }
-
-    with open('config.ini', 'w', encoding='utf-8') as f:
-        conf.write(f)
-
-
-
+version = versi
 # --------------------------------------------------
 # ③ PathManager & 日志
 # --------------------------------------------------
@@ -86,16 +71,26 @@ path_manager = PathManager()
 def configure_logging():
     log_dir = path_manager.get_log_dir()
     logger.add(
-        log_dir / f"PowerPointTouchAssist_{{time:YYYY-MM-DD-HH-mm-ss}}.log",
+        log_dir / f"PowerPointTouchAssist_{{time:YYYY-MM-DD-HH}}.log",
         rotation="5 MB",
         retention="30 days",
         compression="tar.gz",
         backtrace=True,
         diagnose=True,
-        catch=True
+        catch=True,
+        level="DEBUG"
     )
 
+# 未捕获异常处理
+"""
+def capture_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logger.error("未处理的异常", exc_info=(exc_type, exc_value, exc_traceback))
 
+sys.excepthook = capture_exception
+"""
 def log_software_info():
     logger.info(CONFIG_TEMPLATE + "\n日志系统启动成功")
     logger.info("软件启动成功")
@@ -217,8 +212,7 @@ class TrayIcon(QSystemTrayIcon):
 # ⑦ 业务线程（示例）
 # --------------------------------------------------
 def run_func():
-    # 这里放你的核心业务，例如监听 PowerPoint 触屏
-    logger.info("业务线程启动")
+    func.main()
 
 
 # --------------------------------------------------
@@ -227,7 +221,6 @@ def run_func():
 def main():
     args = sys.argv[1:]
     if 'settings' in args:
-        # conf_ui.main()   # 若不存在可注释
         return
 
     app = QApplication(sys.argv)
@@ -239,11 +232,6 @@ def main():
     # 首次启动快捷方式 & 设置
     if int(conf_file.read_conf('Miscellaneous', 'InitialStartUp') or 0) == 1:
         conf_file.write_conf('Miscellaneous', 'InitialStartUp', '0')
-        # 若 shortcut 模块不存在，下面三行可注释
-        # s.add_to_desktop('PowerPoint_TouchAssist.exe')
-        # s.add_to_startmenu('PowerPoint_TouchAssist.exe')
-        # s.add_to_startmenu('PowerPoint_TouchAssist.exe', name='PowerPoint 触屏辅助 - 设置', args='settings')
-        # conf_ui.main()
     else:
         t = threading.Thread(target=run_func, daemon=True)
         t.start()
@@ -260,3 +248,4 @@ if __name__ == '__main__':
     configure_logging()
     log_software_info()
     main()
+    

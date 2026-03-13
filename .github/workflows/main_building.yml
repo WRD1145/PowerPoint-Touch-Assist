@@ -1,0 +1,118 @@
+name: Build Release
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+
+jobs:
+  build:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'v')
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout merged code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Extract version info
+        id: extract
+        shell: pwsh
+        run: |
+          $rawTitle = "${{ github.event.pull_request.title }}"
+          $body = "${{ github.event.pull_request.body }}"
+          
+          # 提取版本（支持 v1.4.0, v1.4.0-beta, v1.4.0-beta.2 等）
+          $version = $rawTitle -replace '^v', ''
+          
+          # 检测是否为预发布版本（含 -alpha, -beta, -rc, -pre 等）
+          $isPrerelease = $version -match '-(alpha|beta|rc|pre|dev|snapshot)'
+          
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "is_prerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
+          "body=$body" >> $env:GITHUB_OUTPUT
+          
+          Write-Host "Version: $version"
+          Write-Host "Is Prerelease: $isPrerelease"
+
+      - name: Update version in _version.py
+        shell: pwsh
+        run: |
+          $version = "${{ steps.extract.outputs.version }}"
+          "__version__ = `"$version`"" | Set-Content -Path "_version.py" -Encoding UTF8
+          Write-Host "✓ _version.py: $version"
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m venv venv
+          venv\Scripts\activate
+          pip install -r requirements.txt pyinstaller
+
+      - name: Inject telemetry config
+        shell: pwsh
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: |
+          New-Item -ItemType Directory -Force -Path "resources" | Out-Null
+          $config = @{
+            dsn = $env:SENTRY_DSN
+            environment = "production"
+            release = "${{ steps.extract.outputs.version }}"
+            traces_sample_rate = 0.1
+          } | ConvertTo-Json
+          $config | Set-Content -Path "resources/telemetry.json" -Encoding UTF8
+          Write-Host "✓ telemetry.json: ${{ steps.extract.outputs.version }}"
+
+      - name: Build with PyInstaller
+        shell: pwsh
+        run: |
+          venv\Scripts\activate
+          pyinstaller -w -i icon.ico -n "PowerPoint-Touch-Assist" `
+            --add-data "main.ui;." `
+            --add-data "settings.ui;." `
+            --add-data "img;img" `
+            --add-data "icon.png;." `
+            --add-data "resources;resources" `
+            --clean `
+            main.py
+
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          $version = "${{ steps.extract.outputs.version }}"
+          Compress-Archive -Path "dist/PowerPoint-Touch-Assist/*" `
+            -DestinationPath "dist/PowerPoint-Touch-Assist-v$version.zip" -Force
+
+      - name: Create Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = "${{ steps.extract.outputs.version }}"
+          $displayVersion = "v$version"
+          $isPrerelease = "${{ steps.extract.outputs.is_prerelease }}"
+          $zipPath = "dist/PowerPoint-Touch-Assist-v$version.zip"
+          
+          Write-Host "Creating release: $displayVersion"
+          Write-Host "Prerelease: $isPrerelease"
+          
+          # 构建命令
+          $cmd = "gh release create `"$displayVersion`" `"$zipPath`" --title `"$displayVersion`" --notes `"${{ steps.extract.outputs.body }}`""
+          
+          # 如果是预发布，添加标志
+          if ($isPrerelease -eq "True") {
+            $cmd += " --prerelease"
+            Write-Host "Marked as PRE-RELEASE"
+          }
+          
+          Invoke-Expression $cmd
+
+      - name: Cleanup sensitive files
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path "resources/telemetry.json") {
+            Remove-Item "resources/telemetry.json" -Force
+          }

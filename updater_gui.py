@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-updater_gui.py
-功能：下载 zip → 解压 → 除 logs & config.ini 外全部覆盖 → 重启
-      若主程序被占用（Windows）→ 生成延迟 bat 脚本完成覆盖与重启
-"""
 import json
 import os
 import sys
@@ -190,6 +183,7 @@ class UpdaterWindow(QWidget):
         except Exception as e:
             logger.error(f"获取版本信息失败：{e}")
             self.log.append(f"<font color=red>检查失败：{e}</font>")
+            self.lb_remote.setText("远程版本号：获取失败，请查看日志")
             return
 
         self.lb_remote.setText(f"远程版本：{self.latest_ver}")

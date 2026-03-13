@@ -41,6 +41,7 @@ def _ensure_conf():
         return
     cfg = config.ConfigParser()
     cfg.read_dict(DEFAULTS)
+    print(f"「揭开记忆的帷幕，激起往昔的涟漪」配置文件不存在，已创建默认配置文件：{CONFIG_PATH}")
     with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
         cfg.write(f)
 

@@ -4,32 +4,52 @@ from win32com.client import Dispatch
 program_name = 'PowerPoint 触屏辅助'
 
 
-def add_to_startup(file_path="", icon_path=""):
-    """添加开机自启快捷方式"""
+def add_to_startup(file_path="", program_name="MyProgram"):
+    """添加开机自启（注册表方式）"""
     if file_path == "":
         file_path = os.path.realpath(__file__)
     else:
         file_path = os.path.abspath(file_path)
 
-    if icon_path == "":
-        icon_path = file_path
+    # 使用 pythonw.exe 隐藏控制台窗口（如果是 .py 文件）
+    if file_path.endswith('.py'):
+        python_exe = sys.executable.replace('python.exe', 'pythonw.exe')
+        command = f'"{python_exe}" "{file_path}"'
+    else:
+        command = f'"{file_path}"'
 
-    startup_folder = os.path.join(os.getenv('APPDATA'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
-    shortcut_path = os.path.join(startup_folder, f'{program_name}.lnk')
+    # 写入注册表启动项
+    key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE)
+        winreg.SetValueEx(key, program_name, 0, winreg.REG_SZ, command)
+        winreg.CloseKey(key)
+        print(f"已添加自启: {program_name} -> {command}")
+        return True
+    except Exception as e:
+        print(f"添加失败: {e}")
+        return False
 
-    # 先删再建
-    if os.path.exists(shortcut_path):
-        os.remove(shortcut_path)
+def remove_from_startup(program_name):
+    """移除开机自启（注册表方式）"""
+    key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE)
+        try:
+            winreg.DeleteValue(key, program_name)
+            print(f"已移除自启: {program_name}")
+            result = True
+        except FileNotFoundError:
+            print(f"启动项不存在: {program_name}")
+            result = False
+        winreg.CloseKey(key)
+        return result
+    except Exception as e:
+        print(f"移除失败: {e}")
+        return False
 
-    shell = Dispatch('WScript.Shell')
-    shortcut = shell.CreateShortCut(shortcut_path)
-    shortcut.Targetpath = file_path
-    shortcut.WorkingDirectory = os.path.dirname(file_path)
-    shortcut.IconLocation = icon_path
-    shortcut.save()
 
-
-def remove_from_startup():
+def remove_from_startup(program_name):
     """移除开机自启快捷方式"""
     startup_folder = os.path.join(os.getenv('APPDATA'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
     shortcut_path = os.path.join(startup_folder, f'{program_name}.lnk')
