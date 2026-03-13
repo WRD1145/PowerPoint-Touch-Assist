@@ -6,7 +6,7 @@ import json
 import atexit
 from typing import Optional, Dict, Any
 from loguru import logger
-from BrowserTracing  import sentry_sdk;
+import sentry_sdk;
 try:
     from _version import __version__ as VERSION
 except ImportError:
