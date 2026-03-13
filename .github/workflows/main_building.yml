@@ -3,116 +3,87 @@ name: Build Release
 on:
   pull_request:
     types: [closed]
-  workflow_dispatch:
+    branches: [main]
+  push:
+    branches: [main]
 
 jobs:
   build:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'v')
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'v')) ||
+      (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'v'))
+    
     runs-on: windows-latest
+    permissions:
+      contents: write
     
     steps:
-      - name: Checkout merged code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v6
+      
+      - uses: actions/setup-python@v6  # 使用 v6（如果存在）
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          python-version: '3.11'
 
-      - name: Extract version info
-        id: extract
+      - name: Extract version
+        id: ver
         shell: pwsh
         run: |
-          $rawTitle = "${{ github.event.pull_request.title }}"
-          $body = "${{ github.event.pull_request.body }}"
-          
-          # 提取版本（支持 v1.4.0, v1.4.0-beta, v1.4.0-beta.2 等）
-          $version = $rawTitle -replace '^v', ''
-          
-          # 检测是否为预发布版本（含 -alpha, -beta, -rc, -pre 等）
-          $isPrerelease = $version -match '-(alpha|beta|rc|pre|dev|snapshot)'
-          
+          if ("${{ github.event_name }}" -eq "pull_request") {
+            $msg = "${{ github.event.pull_request.title }}"
+          } else {
+            $msg = ("${{ github.event.head_commit.message }}" -split "`r?`n")[0]
+          }
+          $version = $msg -replace '^v', ''
+          $isPre = $version -match '-(alpha|beta|rc|pre)'
           "version=$version" >> $env:GITHUB_OUTPUT
-          "is_prerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
-          "body=$body" >> $env:GITHUB_OUTPUT
-          
-          Write-Host "Version: $version"
-          Write-Host "Is Prerelease: $isPrerelease"
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+          "is_prerelease=$isPre" >> $env:GITHUB_OUTPUT
 
-      - name: Update version in _version.py
+      - name: Update _version.py
         shell: pwsh
         run: |
-          $version = "${{ steps.extract.outputs.version }}"
-          "__version__ = `"$version`"" | Set-Content -Path "_version.py" -Encoding UTF8
-          Write-Host "✓ _version.py: $version"
+          "__version__ = `"${{ steps.ver.outputs.version }}`"" | Set-Content "_version.py"
 
-      - name: Install dependencies
+      - name: Install deps
         shell: pwsh
         run: |
           python -m venv venv
           venv\Scripts\activate
           pip install -r requirements.txt pyinstaller
 
-      - name: Inject telemetry config
+      - name: Inject Sentry & Build
         shell: pwsh
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           New-Item -ItemType Directory -Force -Path "resources" | Out-Null
-          $config = @{
+          @{
             dsn = $env:SENTRY_DSN
             environment = "production"
-            release = "${{ steps.extract.outputs.version }}"
+            release = "${{ steps.ver.outputs.version }}"
             traces_sample_rate = 0.1
-          } | ConvertTo-Json
-          $config | Set-Content -Path "resources/telemetry.json" -Encoding UTF8
-          Write-Host "✓ telemetry.json: ${{ steps.extract.outputs.version }}"
-
-      - name: Build with PyInstaller
-        shell: pwsh
-        run: |
-          venv\Scripts\activate
+          } | ConvertTo-Json | Set-Content "resources/telemetry.json"
+          
           pyinstaller -w -i icon.ico -n "PowerPoint-Touch-Assist" `
             --add-data "main.ui;." `
             --add-data "settings.ui;." `
             --add-data "img;img" `
             --add-data "icon.png;." `
             --add-data "resources;resources" `
-            --clean `
             main.py
-
-      - name: Package artifact
-        shell: pwsh
-        run: |
-          $version = "${{ steps.extract.outputs.version }}"
-          Compress-Archive -Path "dist/PowerPoint-Touch-Assist/*" `
-            -DestinationPath "dist/PowerPoint-Touch-Assist-v$version.zip" -Force
+          
+          $v = "${{ steps.ver.outputs.version }}"
+          Compress-Archive -Path "dist/PowerPoint-Touch-Assist/*" -DestinationPath "dist/PowerPoint-Touch-Assist-v$v.zip"
 
       - name: Create Release
-        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $version = "${{ steps.extract.outputs.version }}"
-          $displayVersion = "v$version"
-          $isPrerelease = "${{ steps.extract.outputs.is_prerelease }}"
-          $zipPath = "dist/PowerPoint-Touch-Assist-v$version.zip"
-          
-          Write-Host "Creating release: $displayVersion"
-          Write-Host "Prerelease: $isPrerelease"
-          
-          # 构建命令
-          $cmd = "gh release create `"$displayVersion`" `"$zipPath`" --title `"$displayVersion`" --notes `"${{ steps.extract.outputs.body }}`""
-          
-          # 如果是预发布，添加标志
-          if ($isPrerelease -eq "True") {
-            $cmd += " --prerelease"
-            Write-Host "Marked as PRE-RELEASE"
-          }
-          
-          Invoke-Expression $cmd
+          $tag = "${{ steps.ver.outputs.tag }}"
+          $pre = "${{ steps.ver.outputs.is_prerelease }}"
+          gh release create $tag dist/PowerPoint-Touch-Assist-v${{ steps.ver.outputs.version }}.zip `
+            --title $tag --generate-notes $(if($pre -eq "True"){"--prerelease"})
 
-      - name: Cleanup sensitive files
+      - name: Cleanup
         if: always()
-        shell: pwsh
-        run: |
-          if (Test-Path "resources/telemetry.json") {
-            Remove-Item "resources/telemetry.json" -Force
-          }
+        run: Remove-Item "resources/telemetry.json" -Force -ErrorAction SilentlyContinue
