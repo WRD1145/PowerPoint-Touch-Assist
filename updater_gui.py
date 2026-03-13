@@ -13,7 +13,7 @@ from PyQt6.QtCore import QThread, pyqtSignal, Qt, QCoreApplication
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QProgressBar, QTextEdit, QApplication)
 from PyQt6.QtGui import QIcon
-import version
+import _version
 
 # -------------- 日志 --------------
 from loguru import logger

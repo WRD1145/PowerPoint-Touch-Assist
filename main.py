@@ -78,7 +78,7 @@ def configure_logging():
         backtrace=True,
         diagnose=True,
         catch=True,
-        level="DEBUG"
+        level="INFO"
     )
 
 # 未捕获异常处理
