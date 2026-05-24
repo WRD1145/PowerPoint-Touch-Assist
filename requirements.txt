@@ -39,7 +39,7 @@ requests==2.32.5
 sentry-sdk==2.54.0
 shiboken6==6.10.0
 six==1.17.0
-sqlparse==0.5.3
+sqlparse==0.5.4
 tzdata==2025.2
 urllib3==2.5.0
 win32_setctime==1.2.0
